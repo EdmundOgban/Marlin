@@ -52,6 +52,10 @@
  */
 #include "MarlinConfig.h"
 
+#if MOTHERBOARD == 26
+  #include "fabtotum_custom.h"
+#endif
+
 #if HAS_SERVOS
 
 #include <avr/interrupt.h>
@@ -250,6 +254,7 @@ Servo::Servo() {
 
 int8_t Servo::attach(int pin) {
   return this->attach(pin, MIN_PULSE_WIDTH, MAX_PULSE_WIDTH);
+ 
 }
 
 int8_t Servo::attach(int pin, int min, int max) {
@@ -267,6 +272,11 @@ int8_t Servo::attach(int pin, int min, int max) {
   timer16_Sequence_t timer = SERVO_INDEX_TO_TIMER(servoIndex);
   if (!isTimerActive(timer)) initISR(timer);
   servo_info[this->servoIndex].Pin.isActive = true;  // this must be set after the check for isTimerActive
+  
+  #if MOTHERBOARD == 26
+    if (servoIndex == 0) PW_SERVO0_ON(); //servo 0 on
+    if (servoIndex == 1) PW_SERVO1_ON(); //servo 1 on
+  #endif  
 
   return this->servoIndex;
 }
@@ -275,6 +285,10 @@ void Servo::detach() {
   servo_info[this->servoIndex].Pin.isActive = false;
   timer16_Sequence_t timer = SERVO_INDEX_TO_TIMER(servoIndex);
   if (!isTimerActive(timer)) finISR(timer);
+  #if MOTHERBOARD == 26
+    if (servoIndex == 0) PW_SERVO0_OFF(); //servo 0 off
+    if (servoIndex == 1) PW_SERVO1_OFF(); //servo 1 off
+  #endif
 }
 
 void Servo::write(int value) {

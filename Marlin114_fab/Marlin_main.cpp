@@ -258,6 +258,10 @@
 #include "types.h"
 #include "gcode.h"
 
+#if MOTHERBOARD == 26
+  #include "fabtotum_custom.h"
+#endif
+
 #if HAS_ABL
   #include "vector_3.h"
   #if ENABLED(AUTO_BED_LEVELING_LINEAR)
@@ -999,15 +1003,21 @@ void servo_init() {
 
       // This variant uses 3 separate pins for the RGB components.
       // If the pins can do PWM then their intensity will be set.
-      WRITE(RGB_LED_R_PIN, r ? HIGH : LOW);
-      WRITE(RGB_LED_G_PIN, g ? HIGH : LOW);
-      WRITE(RGB_LED_B_PIN, b ? HIGH : LOW);
-      analogWrite(RGB_LED_R_PIN, r);
-      analogWrite(RGB_LED_G_PIN, g);
-      analogWrite(RGB_LED_B_PIN, b);
+      //WRITE(RGB_LED_R_PIN, r ? HIGH : LOW);
+      //WRITE(RGB_LED_G_PIN, g ? HIGH : LOW);
+      //WRITE(RGB_LED_B_PIN, b ? HIGH : LOW);
+      #if MOTHERBOARD == 26
+        analogWrite(RGB_LED_R_PIN, 255 - r);
+        analogWrite(RGB_LED_G_PIN, 255 - g);
+        analogWrite(RGB_LED_B_PIN, 255 - b);
+      #else
+        analogWrite(RGB_LED_R_PIN, r); 
+        analogWrite(RGB_LED_G_PIN, g);
+        analogWrite(RGB_LED_B_PIN, b);
+      #endif
 
       #if ENABLED(RGBW_LED)
-        WRITE(RGB_LED_W_PIN, w ? HIGH : LOW);
+        //WRITE(RGB_LED_W_PIN, w ? HIGH : LOW);
         analogWrite(RGB_LED_W_PIN, w);
       #endif
 
@@ -5895,6 +5905,7 @@ inline void gcode_G92() {
   inline void gcode_M5() {
     stepper.synchronize();
     WRITE(SPINDLE_LASER_ENABLE_PIN, !SPINDLE_LASER_ENABLE_INVERT);
+    analogWrite(SPINDLE_LASER_PWM_PIN, 0);
     delay_for_power_down();
   }
 
@@ -11059,6 +11070,93 @@ void process_next_command() {
           break;
       #endif
 
+// FABtotum custom gcode        
+    #if MOTHERBOARD == 26
+      case 60:
+        FABtotum::M60();
+      break;
+      case 61:
+        FABtotum::M61();
+      break;
+      case 62:
+        FABtotum::M62();
+      break;
+
+      case 450: // M450: S<1-3> - Query or change working mode HYBRID, FFF, LASER, CNC
+        FABtotum::M450();
+        break;
+    
+    case 700:
+        FABtotum::M700();
+      break;
+      case 720:
+        FABtotum::M720();
+      break;
+      case 721:
+        FABtotum::M721();
+      break;
+      case 722:
+        FABtotum::M722();
+      break;
+      case 723:
+        FABtotum::M723();
+      break;
+      case 724:
+        FABtotum::M724();
+      break;
+      case 725:
+        FABtotum::M725();
+      break;
+      case 726:
+        FABtotum::M726();
+      break;
+      case 727:
+        FABtotum::M727();
+      break;
+      case 728: // M728: raspy Alive
+        FABtotum::M728();
+        break;
+      case 729:
+        FABtotum::M729();
+      break;
+      //case 730:
+      //  FABtotum::M730();
+      //break;
+      case 741:
+        FABtotum::M741();
+      break;
+      case 750:
+        FABtotum::M750();
+      break;
+      case 751:
+        FABtotum::M751();
+      break;
+      case 752:
+        FABtotum::M752();
+      break;
+      case 753:
+        FABtotum::M753();
+      break;
+      case 744:
+        FABtotum::M744();
+      break;     
+      case 763: // M763: FAB-UI settings tweak
+        FABtotum::M763();
+        break;
+      case 793: // M793: set/read installed head soft ID
+        FABtotum::M793();
+        break;
+
+
+
+
+#endif
+// END FABtotum custom gcode      
+      
+      
+      
+      
+      
       #if HAS_BED_PROBE
         case 851: // M851: Set Z Probe Z Offset
           gcode_M851();
@@ -12398,7 +12496,7 @@ void prepare_move_to_destination() {
             WRITE(STAT_LED_BLUE_PIN, new_led ? LOW : HIGH);
           #endif
         #else
-          WRITE(STAT_LED_BLUE_PIN, new_led ? HIGH : LOW);
+          WRITE(STAT_LED_BLUE_PIN, new_led ? LOW : HIGH);
         #endif
       }
     }
@@ -12989,6 +13087,10 @@ void setup() {
   stepper.init();    // Initialize stepper, this enables interrupts!
   servo_init();
 
+  #if MOTHERBOARD == 26
+    FABtotum::init();
+  #endif
+  
   #if HAS_PHOTOGRAPH
     OUT_WRITE(PHOTOGRAPH_PIN, LOW);
   #endif
@@ -13043,7 +13145,7 @@ void setup() {
   #endif
 
   #if PIN_EXISTS(STAT_LED_BLUE)
-    OUT_WRITE(STAT_LED_BLUE_PIN, LOW); // turn it off
+    OUT_WRITE(STAT_LED_BLUE_PIN, HIGH); // turn it off
   #endif
 
   #if ENABLED(RGB_LED) || ENABLED(RGBW_LED)

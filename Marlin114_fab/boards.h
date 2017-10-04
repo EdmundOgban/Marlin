@@ -33,6 +33,8 @@
 #define BOARD_CNCONTROLS_12     112  // Cartesio CN Controls V12
 #define BOARD_CHEAPTRONIC       2    // Cheaptronic v1.0
 #define BOARD_CHEAPTRONIC_V2    21   // Cheaptronic v2.0
+#define BOARD_FABTOTUM          25   // FABtotum board
+#define BOARD_FABTOTUM2         26   // FABtotum board WITH GOOD CHOICE OF PINS
 #define BOARD_SETHI             20   // Sethi 3D_1
 #define BOARD_MIGHTYBOARD_REVE  200  // Makerbot Mightyboard Revision E
 #define BOARD_RAMPS_OLD         3    // MEGA/RAMPS up to 1.2

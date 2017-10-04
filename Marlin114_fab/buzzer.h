@@ -67,7 +67,11 @@ class Buzzer {
      * @details Alias of digitalWrite(PIN, LOW) using FastIO
      */
     void off() {
-      WRITE(BEEPER_PIN, LOW);
+      #if MOTHERBOARD == 26
+          WRITE(BEEPER_PIN, HIGH);
+      #else
+          WRITE(BEEPER_PIN, LOW);
+      #endif
     }
 
     /**
@@ -75,7 +79,11 @@ class Buzzer {
      * @details Alias of digitalWrite(PIN, HIGH) using FastIO
      */
     void on() {
-      WRITE(BEEPER_PIN, HIGH);
+      #if MOTHERBOARD == 26
+        WRITE(BEEPER_PIN, LOW);
+      #else
+        WRITE(BEEPER_PIN, HIGH);
+      #endif
     }
 
     /**

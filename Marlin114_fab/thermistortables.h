@@ -112,6 +112,14 @@
 #if ANY_THERMISTOR_IS(147) // Pt100 with 4k7 pullup
   #include "thermistortable_147.h"
 #endif
+
+#if ANY_THERMISTOR_IS(169) // R@25C = 100k, Beta = 4750 K FABtotum
+  #include "thermistortable_169.h"
+#endif
+#if ANY_THERMISTOR_IS(170) // R@25C = 100k, Beta = 4750 K FABtotum
+  #include "thermistortable_170.h"
+#endif
+
 #if ANY_THERMISTOR_IS(1010) // Pt1000 with 1k0 pullup
   #include "thermistortable_1010.h"
 #endif
