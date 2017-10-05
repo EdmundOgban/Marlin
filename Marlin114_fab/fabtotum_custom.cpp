@@ -46,7 +46,7 @@ bool MachineManager::change_state(machine_states dst_state)
 
         //TCCR4A = 0b01000001;// COM1A1 COM1A0 COM1B1 COM1B0 COM1C1 COM1C0 WGM11 WGM10
         TCCR4A &= ~(_BV(COM1A1) | _BV(WGM11));
-        TCCR4A |= ~(_BV(COM1A0) | _BV(WGM10));
+        TCCR4A |= (_BV(COM1A0) | _BV(WGM10));
 
         //TCCR4B = 0b00001001;//ICNC1  ICES1     -   WGM13  WGM12   CS12  CS11  CS10
         TCCR4B &= ~(_BV(CS12) | _BV(CS11));
@@ -116,7 +116,7 @@ namespace FABtotum {
         else {
             // Report current state
             SERIAL_ECHO_START();
-            SERIAL_ECHOLNPAIR("Machine mode =",
+            SERIAL_ECHOLNPAIR("Machine mode: ",
                 machine.state_desc[machine.get_current_state()]);
         }
   }
