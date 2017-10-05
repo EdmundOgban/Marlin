@@ -45,12 +45,12 @@ bool MachineManager::change_state(machine_states dst_state)
         servo[0].detach();
 
         //TCCR4A = 0b01000001;// COM1A1 COM1A0 COM1B1 COM1B0 COM1C1 COM1C0 WGM11 WGM10
-        TCCR4A &= ~(_BV(COM1A1) | _BV(WGM11));
-        TCCR4A |= (_BV(COM1A0) | _BV(WGM10));
+        TCCR4A &= ~(_BV(COM4A1) | _BV(WGM41));
+        TCCR4A |=  (_BV(COM4A0) | _BV(WGM40));
 
         //TCCR4B = 0b00001001;//ICNC1  ICES1     -   WGM13  WGM12   CS12  CS11  CS10
-        TCCR4B &= ~(_BV(CS12) | _BV(CS11));
-        TCCR4B |= _BV(CS10);
+        TCCR4B &= ~(_BV(CS42)  | _BV(CS41));
+        TCCR4B |=  (_BV(WGM42) | _BV(CS40));
 
         digitalWrite(SERVO0_PIN, 0);
         digitalWrite(BEEPER_PIN, 0);
