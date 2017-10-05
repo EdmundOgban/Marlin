@@ -3,15 +3,16 @@
  *
  *
  */
+
 #include "pins_FABTOTUM.h"
 #include "macros.h"
 #include "servo.h"
 #include "stepper.h"
-#include "fabtotum_custom.h"
 #include "gcode.h"
+#include "fabtotum_custom.h"
 
 extern Servo servo[NUM_SERVOS];
-
+MachineManager machine;
 
 int machine_mode = 1; // INIT HYBRID MODE
 int installed_head = 0; // INIT NO HEAD
@@ -38,6 +39,29 @@ int FABIOs[][2] = {
     {-1, -1}
 };
 
+bool MachineManager::change_state(machine_states dst_state)
+{    
+    if (dst_state == machine_states::ENGRAVING) { // LASER MODE
+        servo[0].detach();
+
+        //TCCR4A = 0b01000001;// COM1A1 COM1A0 COM1B1 COM1B0 COM1C1 COM1C0 WGM11 WGM10
+        TCCR4A &= ~(_BV(COM1A1) | _BV(WGM11));
+        TCCR4A |= ~(_BV(COM1A0) | _BV(WGM10));
+
+        //TCCR4B = 0b00001001;//ICNC1  ICES1     -   WGM13  WGM12   CS12  CS11  CS10
+        TCCR4B &= ~(_BV(CS12) | _BV(CS11));
+        TCCR4B |= _BV(CS10);
+
+        digitalWrite(SERVO0_PIN, 0);
+        digitalWrite(BEEPER_PIN, 0);
+        _delay_ms(150);
+        digitalWrite(BEEPER_PIN, 1);
+        SERIAL_PROTOCOLLNPGM("Laser mode enabled");
+    }
+
+    current_state = dst_state;
+}
+
 namespace FABtotum {
     static void io_init() {
         int i = 0;
@@ -53,8 +77,6 @@ namespace FABtotum {
         SET_OUTPUT(RPI_RECOVERY_PIN);
         digitalWrite(MILL_MOTOR_ON_PIN, LOW);
         
-        
-        
         LASER_SCAN_OFF();
         PW_SERVO0_OFF();
         PW_SERVO1_OFF();
@@ -63,7 +85,7 @@ namespace FABtotum {
 
     void init() {
         io_init();
-        //set_led_color(0, 255, 255);
+        set_led_color(0, 255, 255);
     }
 
    void M60() {
@@ -87,32 +109,24 @@ namespace FABtotum {
  
 
     void M450() {
-        const bool seen_S = parser.seen('S');
-            if (seen_S) machine_mode = parser.value_int();
-                if (machine_mode == 3) { // LASER MODE
-                    servo[0].detach();
-                    TCCR4A = 0b01000001;// COM1A1 COM1A0 COM1B1 COM1B0 COM1C1 COM1C0 WGM11 WGM10
-                    TCCR4B = 0b00001001;//ICNC1  ICES1     -   WGM13  WGM12   CS12  CS11  CS10
-                    digitalWrite(SERVO0_PIN, 0 );
-                    digitalWrite(BEEPER_PIN, 0 );
-                    _delay_ms(150);
-                    digitalWrite(BEEPER_PIN, 1 );
-                    SERIAL_PROTOCOLLNPGM("Laser mode enabled");
-                    }
-        
-            else if (!seen_S) {
+        if (parser.seen('S')) {
+            machine_mode = parser.value_int();
+            machine.change_state(machine_mode);
+        }
+        else {
             // Report current state
             SERIAL_ECHO_START();
-            SERIAL_ECHOLNPAIR("Machine mode =", machine_mode);
-            }
+            SERIAL_ECHOLNPAIR("Machine mode =",
+                machine.state_desc[machine.get_current_state()]);
+        }
   }
-   
-    
+ 
    void M700() {
        //if (code_seen('S')) analogWrite(LASER_GATE_PIN,255-(code_value_int()));
-       if (parser.seenval('S')) analogWrite(LASER_GATE_PIN,255- (parser.value_int()));
-       else 
-       LASER_SCAN_OFF();
+        if (parser.seenval('S'))
+            analogWrite(LASER_GATE_PIN, 255-(parser.value_int()));
+        else 
+            LASER_SCAN_OFF();
    }
     
     void M720() {

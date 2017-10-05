@@ -6,6 +6,15 @@
 
 extern Buzzer buzzer;
 
+#include "Configuration.h"
+
+extern void set_led_color(
+    const uint8_t r, const uint8_t g, const uint8_t b
+#if ENABLED(RGBW_LED)
+    , const uint8_t w = 0
+#endif
+);
+
 #define BUZZ(d,f) buzzer.tone(d, f)
 
 #define LASER_SCAN_ON()  digitalWrite(LASER_GATE_PIN,LOW)
@@ -21,8 +30,6 @@ extern Buzzer buzzer;
 //#define RASPI_PWR_OFF() WRITE(NOT_RASPI_PWR_ON_PIN,HIGH)
 //#define LIGHT_SIG_ON() WRITE(LIGHT_SIGN_ON_PIN, HIGH)
 //#define LIGHT_SIG_OFF() WRITE(LIGHT_SIGN_ON_PIN, LOW)
-
-
 
 namespace FABtotum {
     void init();
@@ -57,5 +64,41 @@ namespace FABtotum {
     void M763();
     void M793();    
 }
+
+class MachineManager {
+public:
+    enum machine_states {
+        NOT_INIT,
+        HYBRID,
+        FFF,
+        ENGRAVING,
+        MILLING,
+        SCANNING,
+        SLS,
+    };
+
+    const char* state_desc[7] PROGMEM = {
+        "Not initialized",
+        "Hybrid",
+        "Fused Filament Fabrication",
+        "Laser engraving",
+        "Milling",
+        "3D scanning",
+        "Selective Laser Sintering"
+    };
+
+private:
+    machine_states current_state = machine_states::NOT_INIT;
+
+public:
+    bool change_state(machine_states dst_state);
+    machine_states get_current_state() {
+        return current_state;
+    }
+};
+
+// STUB
+class HeadManager {
+};
 
 #endif
