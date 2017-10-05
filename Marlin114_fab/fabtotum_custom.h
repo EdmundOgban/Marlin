@@ -16,6 +16,10 @@ extern void set_led_color(
 );
 
 #define BUZZ(d,f) buzzer.tone(d, f)
+#define cip(freq, dur, dly) do { \
+      BUZZ(dur, freq/2); \
+      BUZZ(dly, 0); \
+} while (0)
 
 #define LASER_SCAN_ON()  digitalWrite(LASER_GATE_PIN,LOW)
 #define LASER_SCAN_OFF() digitalWrite(LASER_GATE_PIN,HIGH)
@@ -25,6 +29,7 @@ extern void set_led_color(
 #define PW_SERVO0_OFF() digitalWrite(NOT_SERVO0_ON_PIN,HIGH)
 #define PW_SERVO1_ON()  digitalWrite(NOT_SERVO1_ON_PIN,LOW)
 #define PW_SERVO1_OFF() digitalWrite(NOT_SERVO1_ON_PIN,HIGH)
+
 
 //#define RASPI_PWR_ON() WRITE(NOT_RASPI_PWR_ON_PIN,LOW)
 //#define RASPI_PWR_OFF() WRITE(NOT_RASPI_PWR_ON_PIN,HIGH)

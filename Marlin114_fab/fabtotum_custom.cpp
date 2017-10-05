@@ -59,6 +59,7 @@ bool MachineManager::change_state(machine_states dst_state)
         SERIAL_PROTOCOLLNPGM("Laser mode enabled");
     }
 
+    set_led_color(245, 230, 220);
     current_state = dst_state;
 }
 
@@ -84,8 +85,9 @@ namespace FABtotum {
     }
 
     void init() {
+        cip(2200, 20, 0);
+        set_led_color(255, 230, 0);
         io_init();
-        set_led_color(0, 255, 255);
     }
 
    void M60() {
@@ -116,8 +118,8 @@ namespace FABtotum {
         else {
             // Report current state
             SERIAL_ECHO_START();
-            SERIAL_ECHOLNPAIR("Machine mode: ",
-                machine.state_desc[machine.get_current_state()]);
+            SERIAL_ECHOPAIR("Machine mode: ", machine.get_current_state());
+            SERIAL_ECHOLNPAIR(" ", machine.state_desc[machine.get_current_state()]);
         }
   }
  
@@ -164,27 +166,15 @@ namespace FABtotum {
     
     // RASPI ALIVE
     void M728() {
-        #define cip(freq, dur, dly) do { \
-              BUZZ(dur, freq/2); \
-              BUZZ(dly, 0); \
-        } while (0)
-
         cip(1780, 50, 50);
         cip(1780, 50, 50);
         cip(1780, 50, 80);
         cip(2200, 100, 100);
-        
     }
 
     void M729() {
-        #define cip(freq, dur, dly) do { \
-              BUZZ(dur, freq/2); \
-              BUZZ(dly, 0); \
-        } while (0)
-
         cip(2200, 100, 100);
-        cip(1780, 50, 50);
-        
+        cip(1780, 50, 50);        
     }
     
 //    void M730() {
