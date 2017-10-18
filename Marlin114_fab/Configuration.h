@@ -1587,7 +1587,7 @@
 // Servo deactivation
 //
 // With this option servos are powered only during movement, then turned off to prevent jitter.
-//#define DEACTIVATE_SERVOS_AFTER_MOVE
+#define DEACTIVATE_SERVOS_AFTER_MOVE
 
 /**
  * Filament Width Sensor
