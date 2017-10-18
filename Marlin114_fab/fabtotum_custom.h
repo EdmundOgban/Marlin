@@ -34,9 +34,10 @@ extern void set_led_color(
 #define MILLING_MOTOR_BRAKE 0
 #define MILLING_MOTOR_CW 1
 
+#define SERVO_SPINDLE_FIX -12
 #define SERVO_SPINDLE_MAX  1832    //(MILL MOTOR input: 1060 us equal to Full CCW, 1460us equal to zero, 1860us equal to Full CW)
 #define SERVO_SPINDLE_MIN  1148
-#define SERVO_SPINDLE_ZERO 1488
+#define SERVO_SPINDLE_ZERO 1488+SERVO_SPINDLE_FIX
 #define SERVO_SPINDLE_ARM  1550
 
 #define RPM_SPINDLE_MAX  14500    // spindle max rpm
@@ -92,6 +93,7 @@ namespace FABtotum {
 
     void M763();
     //void M793();    
+	void M1000();
 }
 
 class MachineManager {

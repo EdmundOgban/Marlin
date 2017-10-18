@@ -15,6 +15,7 @@ extern Servo servo[NUM_SERVOS];
 extern int16_t fanSpeeds[FAN_COUNT];
 MachineManager machine;
 
+uint16_t val_a = 2000, val_b = 1000, val_c = 500;
    
 int FABIOs[][2] = {
     {NOT_SERVO0_ON_PIN     , OUTPUT},
@@ -114,23 +115,28 @@ namespace FABtotum {
 
     void milling_motor_enable()
     {
+		Servo pilot = servo[0];
+
         PW_SERVO0_ON();
         MILL_MOTOR_ON();
         fanSpeeds[0] = 255;
-        servo[0].attach(0);
-        servo[0].write(SERVO_SPINDLE_ARM);
-        _delay_ms(1000);
-        servo[0].write(SERVO_SPINDLE_ZERO);
+        pilot.attach(0);
+        pilot.write(SERVO_SPINDLE_ARM);
+        delay(val_a);
+        pilot.write(SERVO_SPINDLE_ZERO);
+		delay(val_b);
     }
 
     void milling_motor_disable()
     {
+		Servo pilot = servo[0];
+
         milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
         milling_motor_state = motor_states::DISABLED;
         MILL_MOTOR_OFF();
         PW_SERVO0_OFF();
         fanSpeeds[0] = 0;
-        servo[0].detach();
+        pilot.detach();
     }
 
     void milling_motor_set_speed(int8_t direction, uint16_t rpm=0)
@@ -138,22 +144,27 @@ namespace FABtotum {
         NOLESS(rpm, RPM_SPINDLE_MIN);
         NOMORE(rpm, RPM_SPINDLE_MAX);
 
-        float rpm_1 = (SERVO_SPINDLE_ZERO-SERVO_SPINDLE_MIN)/(float)RPM_SPINDLE_MAX;
-        int servo_position = SERVO_SPINDLE_ZERO-(int)(rpm_1*rpm);
+        float rpm_1; 
+        int servo_position;
+		Servo pilot = servo[0];
 
         switch (direction) {
             case MILLING_MOTOR_CW:
-                servo[0].write(servo_position);
+				rpm_1 = (SERVO_SPINDLE_MAX-SERVO_SPINDLE_ZERO)/(float)RPM_SPINDLE_MAX;
+				servo_position = (int)(rpm_1*rpm)+SERVO_SPINDLE_ZERO;
+                pilot.write(servo_position);
                 milling_motor_state = motor_states::RUNNING_CW;
             break;
 
             case MILLING_MOTOR_CCW:
-                servo[0].write(servo_position);
+				rpm_1 = (SERVO_SPINDLE_ZERO-SERVO_SPINDLE_MIN)/(float)RPM_SPINDLE_MAX;
+				servo_position = SERVO_SPINDLE_ZERO-(int)(rpm_1*rpm);
+                pilot.write(servo_position);
                 milling_motor_state = motor_states::RUNNING_CCW;
             break;
             
             case MILLING_MOTOR_BRAKE:
-                servo[0].write(SERVO_SPINDLE_ZERO);
+                pilot.write(SERVO_SPINDLE_ZERO);
                 milling_motor_state = motor_states::STOPPED;
             break;
         }
@@ -161,7 +172,7 @@ namespace FABtotum {
 
     void milling_motor_manage(int m_code)
     {
-        uint16_t rpm = parser.seen("S") ? parser.value_ushort() : 0;
+        uint16_t rpm = parser.seen('S') ? parser.value_ushort() : 0;
 
         if (machine.get_current_state() != MachineManager::machine_states::MILLING) {
             SERIAL_ERROR_START();
@@ -179,7 +190,7 @@ namespace FABtotum {
                 }
                 else if (milling_motor_state == motor_states::RUNNING_CCW) {
                     milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
-                    _delay_ms(2000);
+                    _delay_ms(1000);
                 }
                 milling_motor_set_speed(MILLING_MOTOR_CW, rpm);
             break;
@@ -190,7 +201,7 @@ namespace FABtotum {
                 }
                 else if (milling_motor_state == motor_states::RUNNING_CW) {
                     milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
-                    _delay_ms(2000);
+                    _delay_ms(1000);
                 }
                 milling_motor_set_speed(MILLING_MOTOR_CCW, rpm);
             break;
@@ -200,6 +211,15 @@ namespace FABtotum {
             break;
         }
     }
+ 
+	void M1000() {
+		val_a = parser.seen('A') ? parser.value_ushort() : val_a;
+		val_b = parser.seen('B') ? parser.value_ushort() : val_b;
+		val_c = parser.seen('C') ? parser.value_ushort() : val_c;
+		SERIAL_ECHOPAIR("A:", val_a);
+		SERIAL_ECHOPAIR(" B:", val_b);
+		SERIAL_ECHOLNPAIR(" C:", val_c);
+	}
  
     void M60() {
          servo[0].detach();
