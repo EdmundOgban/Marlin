@@ -254,7 +254,6 @@ Servo::Servo() {
 
 int8_t Servo::attach(int pin) {
   return this->attach(pin, MIN_PULSE_WIDTH, MAX_PULSE_WIDTH);
- 
 }
 
 int8_t Servo::attach(int pin, int min, int max) {

@@ -1,5 +1,5 @@
 <NotepadPlus>
-    <Project name="Marlin 114 fab">
+    <Project name="Marlin 114 fab fork">
         <File name="blinkm.cpp" />
         <File name="blinkm.h" />
         <File name="boards.h" />

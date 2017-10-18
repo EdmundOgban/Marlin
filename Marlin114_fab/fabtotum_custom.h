@@ -127,6 +127,7 @@ public:
     machine_states get_current_state() {
         return current_state;
     }
+
     const char* get_state_description() {
         return state_desc[get_current_state()];
     }
@@ -137,6 +138,7 @@ public:
 private:
     bool enter_state_milling(void);
     bool enter_state_engraving(void);
+
 
 };
 
