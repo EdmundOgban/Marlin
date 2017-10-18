@@ -10573,7 +10573,13 @@ void process_next_command() {
           break;
       #endif // ULTIPANEL
 
-      #if ENABLED(SPINDLE_LASER_ENABLE)
+      #if MB(FABTOTUM2)
+        case 3:
+        case 4:
+        case 5:
+            FABtotum::milling_motor_manage(parser.codenum);
+            break;
+      #elif ENABLED(SPINDLE_LASER_ENABLE)
         case 3:
           gcode_M3_M4(true);   // M3: turn spindle/laser on, set laser/spindle power/speed, set rotation direction CW
           break;               // synchronizes with movement commands
@@ -11143,10 +11149,11 @@ void process_next_command() {
       case 763: // M763: FAB-UI settings tweak
         FABtotum::M763();
         break;
+/*
       case 793: // M793: set/read installed head soft ID
         FABtotum::M793();
         break;
-
+*/
 
 
 

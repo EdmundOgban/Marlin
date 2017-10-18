@@ -12,11 +12,10 @@
 #include "fabtotum_custom.h"
 
 extern Servo servo[NUM_SERVOS];
+extern int16_t fanSpeeds[FAN_COUNT];
 MachineManager machine;
 
-int machine_mode = 1; // INIT HYBRID MODE
-int installed_head = 0; // INIT NO HEAD
-
+   
 int FABIOs[][2] = {
     {NOT_SERVO0_ON_PIN     , OUTPUT},
     {NOT_SERVO1_ON_PIN     , OUTPUT},
@@ -39,31 +38,54 @@ int FABIOs[][2] = {
     {-1, -1}
 };
 
-bool MachineManager::change_state(machine_states dst_state)
-{    
-    if (dst_state == machine_states::ENGRAVING) { // LASER MODE
-        servo[0].detach();
+bool MachineManager::enter_state_engraving() {
+    servo[0].detach();
 
-        //TCCR4A = 0b01000001;// COM1A1 COM1A0 COM1B1 COM1B0 COM1C1 COM1C0 WGM11 WGM10
-        TCCR4A &= ~(_BV(COM4A1) | _BV(WGM41));
-        TCCR4A |=  (_BV(COM4A0) | _BV(WGM40));
+    //TCCR4A = 0b01000001;// COM1A1 COM1A0 COM1B1 COM1B0 COM1C1 COM1C0 WGM11 WGM10
+    TCCR4A &= ~(_BV(COM4A1) | _BV(WGM41));
+    TCCR4A |=  (_BV(COM4A0) | _BV(WGM40));
 
-        //TCCR4B = 0b00001001;//ICNC1  ICES1     -   WGM13  WGM12   CS12  CS11  CS10
-        TCCR4B &= ~(_BV(CS42)  | _BV(CS41));
-        TCCR4B |=  (_BV(WGM42) | _BV(CS40));
+    //TCCR4B = 0b00001001;//ICNC1  ICES1     -   WGM13  WGM12   CS12  CS11  CS10
+    TCCR4B &= ~(_BV(CS42)  | _BV(CS41));
+    TCCR4B |=  (_BV(WGM42) | _BV(CS40));
 
-        digitalWrite(SERVO0_PIN, 0);
-        digitalWrite(BEEPER_PIN, 0);
-        _delay_ms(150);
-        digitalWrite(BEEPER_PIN, 1);
-        SERIAL_PROTOCOLLNPGM("Laser mode enabled");
-    }
+    digitalWrite(SERVO0_PIN, 0);
+    digitalWrite(BEEPER_PIN, 0);
+    _delay_ms(150);
+    digitalWrite(BEEPER_PIN, 1);
+    SERIAL_PROTOCOLLNPGM("Laser mode enabled");
 
-    set_led_color(245, 230, 220);
-    current_state = dst_state;
+    return true;
 }
 
+bool MachineManager::enter_state_milling() {
+    return true;
+}
+
+bool MachineManager::change_state(machine_states dst_state)
+{
+    bool valid_state = false;
+
+    switch (dst_state) {
+        case machine_states::ENGRAVING:
+            valid_state = enter_state_engraving();
+            break;
+        case machine_states::MILLING:
+            valid_state = enter_state_milling();
+            break;
+    }
+
+    if (valid_state) {
+        set_led_color(245, 230, 220);
+        current_state = dst_state;
+    }
+
+    return valid_state;
+}
+
+
 namespace FABtotum {
+
     static void io_init() {
         int i = 0;
         int* val = FABIOs[i];
@@ -90,36 +112,122 @@ namespace FABtotum {
         io_init();
     }
 
-   void M60() {
-        servo[0].detach();
-        
-   }   
+    void milling_motor_enable()
+    {
+        PW_SERVO0_ON();
+        MILL_MOTOR_ON();
+        fanSpeeds[0] = 255;
+        servo[0].attach(0);
+        servo[0].write(SERVO_SPINDLE_ARM);
+        _delay_ms(1000);
+        servo[0].write(SERVO_SPINDLE_ZERO);
+    }
 
+    void milling_motor_disable()
+    {
+        milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
+        milling_motor_state = motor_states::DISABLED;
+        MILL_MOTOR_OFF();
+        PW_SERVO0_OFF();
+        fanSpeeds[0] = 0;
+        servo[0].detach();
+    }
+
+    void milling_motor_set_speed(int8_t direction, uint16_t rpm=0)
+    {
+        NOLESS(rpm, RPM_SPINDLE_MIN);
+        NOMORE(rpm, RPM_SPINDLE_MAX);
+
+        float rpm_1 = (SERVO_SPINDLE_ZERO-SERVO_SPINDLE_MIN)/(float)RPM_SPINDLE_MAX;
+        int servo_position = SERVO_SPINDLE_ZERO-(int)(rpm_1*rpm);
+
+        switch (direction) {
+            case MILLING_MOTOR_CW:
+                servo[0].write(servo_position);
+                milling_motor_state = motor_states::RUNNING_CW;
+            break;
+
+            case MILLING_MOTOR_CCW:
+                servo[0].write(servo_position);
+                milling_motor_state = motor_states::RUNNING_CCW;
+            break;
+            
+            case MILLING_MOTOR_BRAKE:
+                servo[0].write(SERVO_SPINDLE_ZERO);
+                milling_motor_state = motor_states::STOPPED;
+            break;
+        }
+    }
+
+    void milling_motor_manage(int m_code)
+    {
+        uint16_t rpm = parser.seen("S") ? parser.value_ushort() : 0;
+
+        if (machine.get_current_state() != MachineManager::machine_states::MILLING) {
+            SERIAL_ERROR_START();
+            SERIAL_ECHOPAIR("current state (", machine.get_state_description());
+            SERIAL_ECHOLNPAIR(") disallows command M", m_code);
+            return;
+        }
+
+        stepper.synchronize();
+
+        switch (m_code) {
+            case 3:
+                if (milling_motor_state == motor_states::DISABLED) {
+                    milling_motor_enable();
+                }
+                else if (milling_motor_state == motor_states::RUNNING_CCW) {
+                    milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
+                    _delay_ms(2000);
+                }
+                milling_motor_set_speed(MILLING_MOTOR_CW, rpm);
+            break;
+
+            case 4:
+                if (milling_motor_state == motor_states::DISABLED) {
+                    milling_motor_enable();
+                }
+                else if (milling_motor_state == motor_states::RUNNING_CW) {
+                    milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
+                    _delay_ms(2000);
+                }
+                milling_motor_set_speed(MILLING_MOTOR_CCW, rpm);
+            break;
+
+            case 5:
+                milling_motor_disable();
+            break;
+        }
+    }
+ 
+    void M60() {
+         servo[0].detach();
+    }
 
     void M61() {
         stepper.synchronize();
-        if (parser.seenval('S')) analogWrite(SERVO0_PIN, parser.value_int());
+        if (parser.seenval('S'))
+            analogWrite(SERVO0_PIN, parser.value_int());
         else
             digitalWrite(SERVO0_PIN, 255 );
-   }   
+    }   
     
     void M62() {
-            stepper.synchronize();
-            digitalWrite(SERVO0_PIN, 0 );
-   }   
+        stepper.synchronize();
+        digitalWrite(SERVO0_PIN, 0 );
+    }   
 
- 
-
-    void M450() {
+     void M450() {
         if (parser.seen('S')) {
-            machine_mode = parser.value_int();
+            int machine_mode = parser.value_int();
             machine.change_state(machine_mode);
         }
         else {
             // Report current state
             SERIAL_ECHO_START();
             SERIAL_ECHOPAIR("Machine mode: ", machine.get_current_state());
-            SERIAL_ECHOLNPAIR(" ", machine.state_desc[machine.get_current_state()]);
+            SERIAL_ECHOLNPAIR(" ", machine.get_state_description());
         }
   }
  
@@ -226,6 +334,8 @@ namespace FABtotum {
     }
 
     // Set/read installed head soft ID
+#pragma warning(da implementare)
+    /*
     void M793() {
         const bool seen_S = parser.seen('S');
             if (seen_S) installed_head = parser.value_int();
@@ -235,6 +345,6 @@ namespace FABtotum {
             SERIAL_ECHOLNPAIR("Installed Head =", installed_head);
             }
     }
-
+    */
     
 }

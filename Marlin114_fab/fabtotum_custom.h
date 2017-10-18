@@ -30,6 +30,18 @@ extern void set_led_color(
 #define PW_SERVO1_ON()  digitalWrite(NOT_SERVO1_ON_PIN,LOW)
 #define PW_SERVO1_OFF() digitalWrite(NOT_SERVO1_ON_PIN,HIGH)
 
+#define MILLING_MOTOR_CCW -1
+#define MILLING_MOTOR_BRAKE 0
+#define MILLING_MOTOR_CW 1
+
+#define SERVO_SPINDLE_MAX  1832    //(MILL MOTOR input: 1060 us equal to Full CCW, 1460us equal to zero, 1860us equal to Full CW)
+#define SERVO_SPINDLE_MIN  1148
+#define SERVO_SPINDLE_ZERO 1488
+#define SERVO_SPINDLE_ARM  1550
+
+#define RPM_SPINDLE_MAX  14500    // spindle max rpm
+#define RPM_SPINDLE_MIN  0        // spindle min rpm
+
 
 //#define RASPI_PWR_ON() WRITE(NOT_RASPI_PWR_ON_PIN,LOW)
 //#define RASPI_PWR_OFF() WRITE(NOT_RASPI_PWR_ON_PIN,HIGH)
@@ -37,7 +49,19 @@ extern void set_led_color(
 //#define LIGHT_SIG_OFF() WRITE(LIGHT_SIGN_ON_PIN, LOW)
 
 namespace FABtotum {
+    enum motor_states {
+        DISABLED,
+        STOPPED,
+        RUNNING_CW,
+        RUNNING_CCW
+    };
+
+    static motor_states milling_motor_state = motor_states::DISABLED;
+
     void init();
+
+    void milling_motor_set_speed(int8_t, uint16_t);
+    void milling_motor_manage(int);
 
     void M60();
     void M61();
@@ -67,39 +91,53 @@ namespace FABtotum {
 
 
     void M763();
-    void M793();    
+    //void M793();    
 }
 
 class MachineManager {
+/********** ATTRIBUTES **********/
 public:
     enum machine_states {
         NOT_INIT,
         HYBRID,
         FFF,
-        ENGRAVING,
         MILLING,
+        ENGRAVING,
         SCANNING,
         SLS,
     };
 
+private:
     const char* state_desc[7] PROGMEM = {
         "Not initialized",
         "Hybrid",
         "Fused Filament Fabrication",
-        "Laser engraving",
         "Milling",
+        "Laser engraving",
         "3D scanning",
         "Selective Laser Sintering"
     };
 
-private:
     machine_states current_state = machine_states::NOT_INIT;
 
+/********** METHODS **********/
 public:
     bool change_state(machine_states dst_state);
+
     machine_states get_current_state() {
         return current_state;
     }
+    const char* get_state_description() {
+        return state_desc[get_current_state()];
+    }
+    const char* get_state_description(machine_states state) {
+        return state_desc[state];
+    }
+
+private:
+    bool enter_state_milling(void);
+    bool enter_state_engraving(void);
+
 };
 
 // STUB
