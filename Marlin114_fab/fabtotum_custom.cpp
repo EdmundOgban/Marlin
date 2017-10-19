@@ -16,7 +16,7 @@ extern Servo servo[NUM_SERVOS];
 extern int16_t fanSpeeds[FAN_COUNT];
 MachineManager machine;
 
-uint16_t val_a = 2000, val_b = 1000, val_c = 500;
+
 
 
 int FABIOs[][2] = {
@@ -254,14 +254,6 @@ namespace FABtotum {
         }
     }
  
-    void M1000() {
-        val_a = parser.seen('A') ? parser.value_ushort() : val_a;
-        val_b = parser.seen('B') ? parser.value_ushort() : val_b;
-        val_c = parser.seen('C') ? parser.value_ushort() : val_c;
-        SERIAL_ECHOPAIR("A:", val_a);
-        SERIAL_ECHOPAIR(" B:", val_b);
-        SERIAL_ECHOLNPAIR(" C:", val_c);
-    }
  
     void M60() {
          servo[0].detach();

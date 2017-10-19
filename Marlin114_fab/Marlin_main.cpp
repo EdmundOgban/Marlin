@@ -11315,9 +11315,6 @@ void process_next_command() {
       case 999: // M999: Restart after being Stopped
         gcode_M999();
         break;
-	  case 1000:
-		FABtotum::M1000();
-		break;
     }
     break;
 
