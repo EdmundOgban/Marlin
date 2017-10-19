@@ -16,7 +16,8 @@ extern int16_t fanSpeeds[FAN_COUNT];
 MachineManager machine;
 
 uint16_t val_a = 2000, val_b = 1000, val_c = 500;
-   
+int16_t milling_motor_current_speed = 0;
+
 int FABIOs[][2] = {
     {NOT_SERVO0_ON_PIN     , OUTPUT},
     {NOT_SERVO1_ON_PIN     , OUTPUT},
@@ -51,9 +52,6 @@ bool MachineManager::enter_state_engraving() {
     TCCR4B |=  (_BV(WGM42) | _BV(CS40));
 
     digitalWrite(SERVO0_PIN, 0);
-    digitalWrite(BEEPER_PIN, 0);
-    _delay_ms(150);
-    digitalWrite(BEEPER_PIN, 1);
     SERIAL_PROTOCOLLNPGM("Laser mode enabled");
 
     return true;
@@ -78,6 +76,8 @@ bool MachineManager::change_state(machine_states dst_state)
 
     if (valid_state) {
         set_led_color(245, 230, 220);
+        cip(2200, 20, 250);
+        cip(2200, 20, 0);
         current_state = dst_state;
     }
 
@@ -113,30 +113,53 @@ namespace FABtotum {
         io_init();
     }
 
+    inline uint16_t milling_motor_rpm_to_servo(int16_t rpm)
+    {
+        float a = (float)(rpm+RPM_SPINDLE_MAX) / RPM_SPINDLE_MAX_BY_2;
+
+        return (uint16_t)lroundf(a*SERVO_SPINDLE_INTERVAL) + SERVO_SPINDLE_MIN;
+    }
+
     void milling_motor_enable()
     {
-		Servo pilot = servo[0];
+        Servo pilot = servo[0];
 
         PW_SERVO0_ON();
         MILL_MOTOR_ON();
         fanSpeeds[0] = 255;
         pilot.attach(0);
         pilot.write(SERVO_SPINDLE_ARM);
-        delay(val_a);
-        pilot.write(SERVO_SPINDLE_ZERO);
-		delay(val_b);
+        _delay_ms(2000);
+        pilot.write(milling_motor_rpm_to_servo(0));
+        _delay_ms(1000);
     }
 
     void milling_motor_disable()
     {
-		Servo pilot = servo[0];
+        Servo pilot = servo[0];
 
         milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
         milling_motor_state = motor_states::DISABLED;
+        _delay_ms(500);
         MILL_MOTOR_OFF();
         PW_SERVO0_OFF();
         fanSpeeds[0] = 0;
         pilot.detach();
+    }
+
+    #define RAMP_STEPS 15
+    #define RAMP_TIME 1000 // msecs 
+    #define RAMP_STEPS_DELAY (RAMP_TIME/RAMP_STEPS)
+
+    void milling_motor_ramp_to(int16_t rpm) {
+        Servo pilot = servo[0];
+        int16_t step = (rpm-milling_motor_current_speed)/RAMP_STEPS;
+
+        for (int i = 0; i < RAMP_STEPS; i++) {
+            milling_motor_current_speed += step;
+            pilot.write(milling_motor_rpm_to_servo(milling_motor_current_speed));
+            _delay_ms(RAMP_STEPS_DELAY);
+        }
     }
 
     void milling_motor_set_speed(int8_t direction, uint16_t rpm=0)
@@ -144,27 +167,22 @@ namespace FABtotum {
         NOLESS(rpm, RPM_SPINDLE_MIN);
         NOMORE(rpm, RPM_SPINDLE_MAX);
 
-        float rpm_1; 
-        int servo_position;
-		Servo pilot = servo[0];
+        Servo pilot = servo[0];
 
         switch (direction) {
             case MILLING_MOTOR_CW:
-				rpm_1 = (SERVO_SPINDLE_MAX-SERVO_SPINDLE_ZERO)/(float)RPM_SPINDLE_MAX;
-				servo_position = (int)(rpm_1*rpm)+SERVO_SPINDLE_ZERO;
-                pilot.write(servo_position);
+                milling_motor_ramp_to(rpm);
                 milling_motor_state = motor_states::RUNNING_CW;
             break;
 
             case MILLING_MOTOR_CCW:
-				rpm_1 = (SERVO_SPINDLE_ZERO-SERVO_SPINDLE_MIN)/(float)RPM_SPINDLE_MAX;
-				servo_position = SERVO_SPINDLE_ZERO-(int)(rpm_1*rpm);
-                pilot.write(servo_position);
+                milling_motor_ramp_to(-rpm);
                 milling_motor_state = motor_states::RUNNING_CCW;
             break;
             
             case MILLING_MOTOR_BRAKE:
-                pilot.write(SERVO_SPINDLE_ZERO);
+                pilot.write(milling_motor_rpm_to_servo(0));
+                milling_motor_current_speed = 0;
                 milling_motor_state = motor_states::STOPPED;
             break;
         }
@@ -212,14 +230,14 @@ namespace FABtotum {
         }
     }
  
-	void M1000() {
-		val_a = parser.seen('A') ? parser.value_ushort() : val_a;
-		val_b = parser.seen('B') ? parser.value_ushort() : val_b;
-		val_c = parser.seen('C') ? parser.value_ushort() : val_c;
-		SERIAL_ECHOPAIR("A:", val_a);
-		SERIAL_ECHOPAIR(" B:", val_b);
-		SERIAL_ECHOLNPAIR(" C:", val_c);
-	}
+    void M1000() {
+        val_a = parser.seen('A') ? parser.value_ushort() : val_a;
+        val_b = parser.seen('B') ? parser.value_ushort() : val_b;
+        val_c = parser.seen('C') ? parser.value_ushort() : val_c;
+        SERIAL_ECHOPAIR("A:", val_a);
+        SERIAL_ECHOPAIR(" B:", val_b);
+        SERIAL_ECHOLNPAIR(" C:", val_c);
+    }
  
     void M60() {
          servo[0].detach();
