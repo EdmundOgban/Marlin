@@ -63,7 +63,7 @@ namespace FABtotum {
 
     void init();
 
-    void milling_motor_set_speed(int8_t, uint16_t);
+    void milling_motor_set_speed(int8_t, uint16_t rpm=0);
     void milling_motor_manage(int);
 
     void M60();
