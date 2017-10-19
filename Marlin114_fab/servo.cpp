@@ -280,14 +280,19 @@ int8_t Servo::attach(int pin, int min, int max) {
   return this->servoIndex;
 }
 
+extern MachineManager machine;
+
 void Servo::detach() {
   servo_info[this->servoIndex].Pin.isActive = false;
   timer16_Sequence_t timer = SERVO_INDEX_TO_TIMER(servoIndex);
   if (!isTimerActive(timer)) finISR(timer);
-  #if MOTHERBOARD == 26
-    if (servoIndex == 0) PW_SERVO0_OFF(); //servo 0 off
-    if (servoIndex == 1) PW_SERVO1_OFF(); //servo 1 off
-  #endif
+#if MOTHERBOARD == 26
+  if (machine.get_current_state() != MachineManager::machine_states::MILLING) {
+      if (servoIndex == 0)
+          PW_SERVO0_OFF(); //servo 0 off
+  }
+  if (servoIndex == 1) PW_SERVO1_OFF(); //servo 1 off
+#endif
 }
 
 void Servo::write(int value) {

@@ -9,6 +9,7 @@
 #include "servo.h"
 #include "stepper.h"
 #include "gcode.h"
+#include "watchdog.h"
 #include "fabtotum_custom.h"
 
 extern Servo servo[NUM_SERVOS];
@@ -16,7 +17,7 @@ extern int16_t fanSpeeds[FAN_COUNT];
 MachineManager machine;
 
 uint16_t val_a = 2000, val_b = 1000, val_c = 500;
-int16_t milling_motor_current_speed = 0;
+
 
 int FABIOs[][2] = {
     {NOT_SERVO0_ON_PIN     , OUTPUT},
@@ -76,8 +77,9 @@ bool MachineManager::change_state(machine_states dst_state)
 
     if (valid_state) {
         set_led_color(245, 230, 220);
-        cip(2200, 20, 250);
-        cip(2200, 20, 0);
+        for (int i = 0; i < dst_state; i++)
+            cip(2200, 20, 100);
+        //cip(2200, 20, 0);
         current_state = dst_state;
     }
 
@@ -115,51 +117,63 @@ namespace FABtotum {
 
     inline uint16_t milling_motor_rpm_to_servo(int16_t rpm)
     {
-        float a = (float)(rpm+RPM_SPINDLE_MAX) / RPM_SPINDLE_MAX_BY_2;
+        if (rpm == 0)
+            return SERVO_SPINDLE_ZERO;
+        
+        int16_t rpm_end = (rpm < 0) ? (-RPM_SPINDLE_MAX) : RPM_SPINDLE_MAX;
+        int16_t servo_spindle = (rpm < 0) ? SERVO_SPINDLE_MIN : SERVO_SPINDLE_MAX;
 
-        return (uint16_t)lroundf(a*SERVO_SPINDLE_INTERVAL) + SERVO_SPINDLE_MIN;
+        return (uint16_t)((float)rpm / rpm_end * (servo_spindle - SERVO_SPINDLE_ZERO)) + SERVO_SPINDLE_ZERO;
     }
 
     void milling_motor_enable()
     {
         Servo pilot = servo[0];
+        milling_motor_current_speed = 0;
 
         PW_SERVO0_ON();
         MILL_MOTOR_ON();
         fanSpeeds[0] = 255;
         pilot.attach(0);
         pilot.write(SERVO_SPINDLE_ARM);
-        _delay_ms(2000);
-        pilot.write(milling_motor_rpm_to_servo(0));
-        _delay_ms(1000);
+        delay(2500);
+        watchdog_reset();
+        pilot.write(SERVO_SPINDLE_ZERO);
+        delay(1500);
+        watchdog_reset();
     }
 
     void milling_motor_disable()
     {
         Servo pilot = servo[0];
 
-        milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
-        milling_motor_state = motor_states::DISABLED;
-        _delay_ms(500);
-        MILL_MOTOR_OFF();
-        PW_SERVO0_OFF();
-        fanSpeeds[0] = 0;
-        pilot.detach();
+        if (milling_motor_state != motor_states::DISABLED) {
+            milling_motor_set_speed(MILLING_MOTOR_BRAKE);
+            milling_motor_state = motor_states::DISABLED;
+            _delay_ms(500);
+            MILL_MOTOR_OFF();
+            PW_SERVO0_OFF();
+            fanSpeeds[0] = 0;
+            pilot.detach();
+        }
     }
 
     #define RAMP_STEPS 15
-    #define RAMP_TIME 1000 // msecs 
+    #define RAMP_TIME 300 // msecs 
     #define RAMP_STEPS_DELAY (RAMP_TIME/RAMP_STEPS)
 
     void milling_motor_ramp_to(int16_t rpm) {
         Servo pilot = servo[0];
-        int16_t step = (rpm-milling_motor_current_speed)/RAMP_STEPS;
-
+        int16_t accel = (rpm-milling_motor_current_speed)/RAMP_STEPS;
+        
+        pilot.attach(0);
         for (int i = 0; i < RAMP_STEPS; i++) {
-            milling_motor_current_speed += step;
+            milling_motor_current_speed += accel;
             pilot.write(milling_motor_rpm_to_servo(milling_motor_current_speed));
             _delay_ms(RAMP_STEPS_DELAY);
         }
+        milling_motor_current_speed = rpm;
+        pilot.detach();
     }
 
     void milling_motor_set_speed(int8_t direction, uint16_t rpm=0)
@@ -181,8 +195,12 @@ namespace FABtotum {
             break;
             
             case MILLING_MOTOR_BRAKE:
-                pilot.write(milling_motor_rpm_to_servo(0));
-                milling_motor_current_speed = 0;
+                if (milling_motor_state == motor_states::RUNNING_CW)
+                    milling_motor_ramp_to(500);
+                else if (milling_motor_state == motor_states::RUNNING_CCW)
+                    milling_motor_ramp_to(-500);
+                else
+                    milling_motor_ramp_to(0);
                 milling_motor_state = motor_states::STOPPED;
             break;
         }
@@ -206,9 +224,12 @@ namespace FABtotum {
                 if (milling_motor_state == motor_states::DISABLED) {
                     milling_motor_enable();
                 }
-                else if (milling_motor_state == motor_states::RUNNING_CCW) {
-                    milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
-                    _delay_ms(1000);
+                else if (milling_motor_state == motor_states::RUNNING_CCW &&
+                    milling_motor_current_speed < 0 &&
+                    rpm > 0)
+                {
+                    milling_motor_set_speed(MILLING_MOTOR_BRAKE);
+                    delay(1000);
                 }
                 milling_motor_set_speed(MILLING_MOTOR_CW, rpm);
             break;
@@ -217,9 +238,12 @@ namespace FABtotum {
                 if (milling_motor_state == motor_states::DISABLED) {
                     milling_motor_enable();
                 }
-                else if (milling_motor_state == motor_states::RUNNING_CW) {
-                    milling_motor_set_speed(MILLING_MOTOR_BRAKE, 0);
-                    _delay_ms(1000);
+                else if (milling_motor_state == motor_states::RUNNING_CW &&
+                    milling_motor_current_speed > 0 &&
+                    rpm > 0)
+                {
+                    milling_motor_set_speed(MILLING_MOTOR_BRAKE);
+                    delay(1000);
                 }
                 milling_motor_set_speed(MILLING_MOTOR_CCW, rpm);
             break;

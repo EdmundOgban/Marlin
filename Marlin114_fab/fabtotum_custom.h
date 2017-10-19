@@ -34,15 +34,16 @@ extern void set_led_color(
 #define MILLING_MOTOR_BRAKE 0
 #define MILLING_MOTOR_CW 1
 
-#define SERVO_SPINDLE_FIX -12
+#define SERVO_SPINDLE_FIX -13
 #define SERVO_SPINDLE_MAX  (1832+SERVO_SPINDLE_FIX)    //(MILL MOTOR input: 1060 us equal to Full CCW, 1460us equal to zero, 1860us equal to Full CW)
 #define SERVO_SPINDLE_MIN  (1148+SERVO_SPINDLE_FIX)
 #define SERVO_SPINDLE_ARM  (1550+SERVO_SPINDLE_FIX)
-#define SERVO_SPINDLE_INTERVAL (SERVO_SPINDLE_MAX-SERVO_SPINDLE_MIN)
+#define SERVO_SPINDLE_ZERO (1476)
+//#define SERVO_SPINDLE_INTERVAL (SERVO_SPINDLE_MAX-SERVO_SPINDLE_MIN)
 
 #define RPM_SPINDLE_MAX  14500    // spindle max rpm
 #define RPM_SPINDLE_MIN  0        // spindle min rpm
-#define RPM_SPINDLE_MAX_BY_2 (RPM_SPINDLE_MAX*2)
+//#define RPM_SPINDLE_MAX_BY_2 (RPM_SPINDLE_MAX*2)
 
 //#define RASPI_PWR_ON() WRITE(NOT_RASPI_PWR_ON_PIN,LOW)
 //#define RASPI_PWR_OFF() WRITE(NOT_RASPI_PWR_ON_PIN,HIGH)
@@ -58,6 +59,7 @@ namespace FABtotum {
     };
 
     static motor_states milling_motor_state = motor_states::DISABLED;
+    static int16_t milling_motor_current_speed = 0;
 
     void init();
 
