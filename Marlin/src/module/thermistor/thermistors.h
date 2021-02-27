@@ -40,7 +40,15 @@
 #define OV_SCALE(N) (N)
 #define OV(N) int16_t(OV_SCALE(N) * (OVERSAMPLENR) * (THERMISTOR_TABLE_SCALE))
 
-#define ANY_THERMISTOR_IS(n) (THERMISTOR_HEATER_0 == n || THERMISTOR_HEATER_1 == n || THERMISTOR_HEATER_2 == n || THERMISTOR_HEATER_3 == n || THERMISTOR_HEATER_4 == n || THERMISTOR_HEATER_5 == n || THERMISTOR_HEATER_6 == n || THERMISTOR_HEATER_7 == n || THERMISTORBED == n || THERMISTORCHAMBER == n || THERMISTORPROBE == n)
+#define ANY_THERMISTOR_IS(n) (THERMISTOR_HEATER_0 == n || HOTSWAP_0_SENSOR == n  \
+|| THERMISTOR_HEATER_1 == n || HOTSWAP_1_SENSOR == n \
+|| THERMISTOR_HEATER_2 == n || HOTSWAP_2_SENSOR == n \
+|| THERMISTOR_HEATER_3 == n || HOTSWAP_3_SENSOR == n \
+|| THERMISTOR_HEATER_4 == n || HOTSWAP_4_SENSOR == n \
+|| THERMISTOR_HEATER_5 == n || HOTSWAP_5_SENSOR == n \
+|| THERMISTOR_HEATER_6 == n || HOTSWAP_6_SENSOR == n \
+|| THERMISTOR_HEATER_7 == n || HOTSWAP_7_SENSOR == n \
+|| THERMISTORBED == n || THERMISTORCHAMBER == n || THERMISTORPROBE == n)
 
 typedef struct { int16_t value, celsius; } temp_entry_t;
 
@@ -161,6 +169,9 @@ typedef struct { int16_t value, celsius; } temp_entry_t;
 #endif
 #if ANY_THERMISTOR_IS(147) // Pt100 with 4k7 pullup
   #include "thermistor_147.h"
+#endif
+#if ANY_THERMISTOR_IS(170) // NTC with 4k7 pullup - FABTotum Extruder
+  #include "thermistor_170.h"
 #endif
 #if ANY_THERMISTOR_IS(201) // Pt100 with LMV324 Overlord
   #include "thermistor_201.h"

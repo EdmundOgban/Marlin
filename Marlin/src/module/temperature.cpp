@@ -1714,6 +1714,10 @@ void Temperature::init() {
   #endif
 
   #if HAS_HEATER_0
+    #if ENABLED(THERMISTOR_HOTSWAP)
+      hotswap_selected = 0;
+    #endif
+
     #ifdef ALFAWISE_UX0
       OUT_WRITE_OD(HEATER_0_PIN, HEATER_0_INVERTING);
     #else
@@ -3534,5 +3538,48 @@ void Temperature::tick() {
     }
 
   #endif // HAS_HEATED_CHAMBER
+
+  #if ENABLED(THERMISTOR_HOTSWAP)
+    const temp_entry_t* ttbl_hotswap_list[] = {
+      #if HOTSWAP_0_SENSOR > 0
+        TT_NAME(HOTSWAP_0_SENSOR),
+      #endif
+      #if HOTSWAP_1_SENSOR > 0
+        TT_NAME(HOTSWAP_1_SENSOR),
+      #endif
+      #if HOTSWAP_2_SENSOR > 0
+        TT_NAME(HOTSWAP_2_SENSOR),
+      #endif
+      #if HOTSWAP_3_SENSOR > 0
+        TT_NAME(HOTSWAP_3_SENSOR),
+      #endif
+      #if HOTSWAP_4_SENSOR > 0
+        TT_NAME(HOTSWAP_4_SENSOR),
+      #endif
+      #if HOTSWAP_5_SENSOR > 0
+        TT_NAME(HOTSWAP_5_SENSOR),
+      #endif
+      #if HOTSWAP_6_SENSOR > 0
+        TT_NAME(HOTSWAP_6_SENSOR),
+      #endif
+      #if HOTSWAP_7_SENSOR > 0
+        TT_NAME(HOTSWAP_7_SENSOR),
+      #endif
+    };
+
+    #define ARRAYLEN(ary, T) sizeof(ary) / sizeof(T)
+
+    bool Temperature::set_heater_ttbl(uint8_t heater_idx, uint8_t table_idx) {
+      if (heater_idx > EXTRUDERS - 1)
+        return false;
+
+      if (table_idx > ARRAYLEN(ttbl_hotswap_list, temp_entry_t*) - 1)
+        return false;
+
+      hotswap_selected = table_idx;
+      heater_ttbl_map[heater_idx] = ttbl_hotswap_list[table_idx];
+      return true;
+    }
+  #endif // ENABLED(THERMISTOR_HOTSWAP)
 
 #endif // HAS_TEMP_SENSOR

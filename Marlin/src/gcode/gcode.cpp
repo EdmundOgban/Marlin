@@ -819,6 +819,18 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 710: M710(); break;                                  // M710: Set Controller Fan settings
       #endif
 
+      #if ENABLED(THERMISTOR_HOTSWAP)
+        case 800:
+          // FIXME: Use active extruder instead of 0?
+          if (!parser.seenval('S')) {
+            SERIAL_PRINTLN(thermalManager.hotswap_selected, DEC);
+          }
+          else if (!thermalManager.set_heater_ttbl(0, parser.value_byte())) {
+            SERIAL_ERROR_MSG("Heater or Table index out of range");
+          }
+          break;
+      #endif
+
       #if ENABLED(GCODE_MACROS)
         case 810: case 811: case 812: case 813: case 814:
         case 815: case 816: case 817: case 818: case 819:

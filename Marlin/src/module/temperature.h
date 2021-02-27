@@ -795,6 +795,11 @@ class Temperature {
           next_temp_report_ms = millis() + 1000UL * v;
         }
       #endif
+      #if ENABLED(THERMISTOR_HOTSWAP)
+        uint8_t hotswap_selected;
+        bool set_heater_ttbl(uint8_t heater_idx, uint8_t table_idx);
+      #endif
+
     #endif
 
     TERN_(HAS_DISPLAY, static void set_heating_message(const uint8_t e));
@@ -880,3 +885,8 @@ class Temperature {
 };
 
 extern Temperature thermalManager;
+
+#if ENABLED(FABTOTUM_COMPAT)
+  #include "../gcode/fabtotum/amblight.h"
+  extern AmbientLight amblight;
+#endif
