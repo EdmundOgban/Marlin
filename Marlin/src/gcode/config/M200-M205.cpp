@@ -128,9 +128,13 @@ void GcodeSuite::M204() {
     //planner.synchronize();
     // 'S' for legacy compatibility. Should NOT BE USED for new development
     if (parser.seenval('S')) planner.settings.travel_acceleration = planner.settings.acceleration = parser.value_linear_units();
-    if (parser.seenval('P')) planner.settings.acceleration = parser.value_linear_units();
-    if (parser.seenval('R')) planner.settings.retract_acceleration = parser.value_linear_units();
-    if (parser.seenval('T')) planner.settings.travel_acceleration = parser.value_linear_units();
+    #if ENABLED(FABTOTUM_COMPAT)
+      if (parser.seenval('T')) planner.settings.retract_acceleration = parser.value_linear_units();
+    #else
+      if (parser.seenval('P')) planner.settings.acceleration = parser.value_linear_units();
+      if (parser.seenval('R')) planner.settings.retract_acceleration = parser.value_linear_units();
+      if (parser.seenval('T')) planner.settings.travel_acceleration = parser.value_linear_units();
+    #endif
   }
 }
 
@@ -175,8 +179,15 @@ void GcodeSuite::M205() {
     }
   #endif
   #if HAS_CLASSIC_JERK
-    if (parser.seen('X')) planner.set_max_jerk(X_AXIS, parser.value_linear_units());
-    if (parser.seen('Y')) planner.set_max_jerk(Y_AXIS, parser.value_linear_units());
+    #if ENABLED(FABTOTUM_COMPAT)
+      if (parser.seen('X')) {
+        planner.set_max_jerk(X_AXIS, parser.value_linear_units());
+        planner.set_max_jerk(Y_AXIS, parser.value_linear_units());
+      }
+    #else
+      if (parser.seen('X')) planner.set_max_jerk(X_AXIS, parser.value_linear_units());
+      if (parser.seen('Y')) planner.set_max_jerk(Y_AXIS, parser.value_linear_units());
+    #endif
     if (parser.seen('Z')) {
       planner.set_max_jerk(Z_AXIS, parser.value_linear_units());
       #if HAS_MESH && DISABLED(LIMITED_JERK_EDITING)
