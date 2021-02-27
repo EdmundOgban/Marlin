@@ -215,5 +215,11 @@ void GcodeSuite::M114() {
   #endif
 
   TERN_(M114_LEGACY, planner.synchronize());
-  report_current_position_projected();
+  #if BOTH(FABTOTUM_COMPAT, FABTOTUM_COMPAT_COLIBRI)
+    report_colibri_position();
+  #elif ENABLED(FABTOTUM_COMPAT)
+    report_legacy_position();
+  #else
+    report_current_position_projected();
+  #endif
 }

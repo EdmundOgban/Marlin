@@ -203,6 +203,12 @@ inline float home_bump_mm(const AxisEnum axis) {
 #endif // !HAS_SOFTWARE_ENDSTOPS
 
 void report_real_position();
+#if ENABLED(FABTOTUM_COMPAT) && DISABLED(FABTOTUM_COMPAT_COLIBRI)
+  void report_legacy_position();
+#endif
+#if ENABLED(FABTOTUM_COMPAT_COLIBRI)
+  void report_colibri_position();
+#endif
 void report_current_position();
 void report_current_position_projected();
 
