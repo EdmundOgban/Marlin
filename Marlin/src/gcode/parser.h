@@ -29,7 +29,11 @@
 
 #include "../inc/MarlinConfig.h"
 
-//#define DEBUG_GCODE_PARSER
+// #define DEBUG_GCODE_PARSER
+#if BOTH(THERMISTOR_HOTSWAP, DEBUG_GCODE_PARSER)
+  #error "M800 function clash: THERMISTOR_HOTSWAP and DEBUG_GCODE_PARSER can't be used together"
+#endif
+
 #if ENABLED(DEBUG_GCODE_PARSER)
   #include "../libs/hex_print.h"
 #endif
