@@ -61,6 +61,10 @@ GcodeSuite gcode;
   #include "../feature/password/password.h"
 #endif
 
+#if ENABLED(FABTOTUM_COMPAT)
+  #include "fabtotum/fabtotum.h"
+#endif
+
 #include "../MarlinCore.h" // for idle()
 
 // Inactivity shutdown
@@ -303,10 +307,13 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 26: G26(); break;                                    // G26: Mesh Validation Pattern generation
       #endif
 
-      #if ENABLED(NOZZLE_PARK_FEATURE)
-        case 27: G27(); break;                                    // G27: Nozzle Park
+      #if DISABLED(FABTOTUM_COMPAT)
+        #if ENABLED(NOZZLE_PARK_FEATURE)
+          case 27: G27(); break;                                    // G27: Nozzle Park
+        #endif
+      #else
+        case 27:
       #endif
-
       case 28: G28(); break;                                      // G28: Home one or more axes
 
       #if HAS_LEVELING
@@ -551,8 +558,14 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
       case 117: M117(); break;                                    // M117: Set LCD message text, if possible
       case 118: M118(); break;                                    // M118: Display a message in the host console
       case 119: M119(); break;                                    // M119: Report endstop states
-      case 120: M120(); break;                                    // M120: Enable endstops
-      case 121: M121(); break;                                    // M121: Disable endstops
+      #if ENABLED(FABTOTUM_COMPAT)
+        // These two commands were swapped a long time ago... not kidding.
+        case 120: M121(); break;                                    // M120: Disable endstops
+        case 121: M120(); break;                                    // M121: Enable endstops
+      #else
+        case 120: M120(); break;                                    // M120: Enable endstops
+        case 121: M121(); break;                                    // M121: Disable endstops
+      #endif
 
       #if PREHEAT_COUNT
         case 145: M145(); break;                                  // M145: Set material heatup parameters
@@ -639,7 +652,13 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
       #endif
 
       #if HAS_BUZZER
-        case 300: M300(); break;                                  // M300: Play beep tone
+        case 300:
+          #if ENABLED(FABTOTUM_COMPAT)
+            FABtotum::M300();
+          #else
+            M300();
+          #endif
+          break;                                                  // M300: Play beep tone
       #endif
 
       #if ENABLED(PIDTEMP)
