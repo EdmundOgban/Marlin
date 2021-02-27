@@ -25,7 +25,7 @@
 
 void report_M92(const bool echo=true, const int8_t e=-1) {
   if (echo) SERIAL_ECHO_START(); else SERIAL_CHAR(' ');
-  SERIAL_ECHOPAIR_P(PSTR(" M92 X"), LINEAR_UNIT(planner.settings.axis_steps_per_mm[X_AXIS]),
+  SERIAL_ECHOPAIR_P(PSTR("  M92 X"), LINEAR_UNIT(planner.settings.axis_steps_per_mm[X_AXIS]),
                           SP_Y_STR, LINEAR_UNIT(planner.settings.axis_steps_per_mm[Y_AXIS]),
                           SP_Z_STR, LINEAR_UNIT(planner.settings.axis_steps_per_mm[Z_AXIS]));
   #if DISABLED(DISTINCT_E_FACTORS)
