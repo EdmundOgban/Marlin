@@ -953,6 +953,38 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 7219: M7219(); break;                                // M7219: Set LEDs, columns, and rows
       #endif
 
+      #if ENABLED(FABTOTUM_COMPAT)
+        // Colibri startup sequence. For now, just answer ok
+        case 402:
+        case 733:
+        case 732:
+        case 734:
+        case 714:
+        case 805:
+        case 710:
+        case 711:
+        case 712:
+        case 793:
+        case 801:
+        case 450:
+        case 563:
+          break;
+
+        // Carriage aiming laser control
+        case 700: break;
+
+        case 701: FABtotum::M701(); break;
+        case 702: FABtotum::M702(); break;
+        case 703: FABtotum::M703(); break;
+        case 728: FABtotum::M728(); break;
+        case 744: FABtotum::M744(); break;
+        case 760: FABtotum::M760(); break;
+        case 763: FABtotum::M763(); break;
+        case 765: FABtotum::M765(); break;
+        case 766: FABtotum::M766(); break;
+        case 767: FABtotum::M767(); break;
+      #endif // ENABLED(FABTOTUM_COMPAT)
+
       default: parser.unknown_command_warning(); break;
     }
     break;
