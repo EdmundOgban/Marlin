@@ -2970,39 +2970,47 @@ void Temperature::tick() {
     #endif
     , const heater_id_t e=INDEX_NONE
   ) {
-    char k;
-    switch (e) {
-      #if HAS_TEMP_CHAMBER
-        case H_CHAMBER: k = 'C'; break;
-      #endif
-      #if HAS_TEMP_PROBE
-        case H_PROBE: k = 'P'; break;
-      #endif
-      #if HAS_TEMP_HOTEND
-        default: k = 'T'; break;
-        #if HAS_HEATED_BED
-          case H_BED: k = 'B'; break;
+      char k;
+      switch (e) {
+        #if HAS_TEMP_CHAMBER
+          case H_CHAMBER: k = 'C'; break;
         #endif
-        #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-          case H_REDUNDANT: k = 'R'; break;
+        #if HAS_TEMP_PROBE
+          case H_PROBE: k = 'P'; break;
         #endif
-      #elif HAS_HEATED_BED
-        default: k = 'B'; break;
-      #endif
-    }
-    SERIAL_CHAR(' ');
-    SERIAL_CHAR(k);
-    #if HAS_MULTI_HOTEND
-      if (e >= 0) SERIAL_CHAR('0' + e);
-    #endif
-    SERIAL_CHAR(':');
-    SERIAL_ECHO(c);
-    SERIAL_ECHOPAIR(" /" , t);
-    #if ENABLED(SHOW_TEMP_ADC_VALUES)
-      SERIAL_ECHOPAIR(" (", r * RECIPROCAL(OVERSAMPLENR));
-      SERIAL_CHAR(')');
-    #endif
-    delay(2);
+        #if HAS_TEMP_HOTEND
+          default: k = 'T'; break;
+          #if HAS_HEATED_BED
+            case H_BED: k = 'B'; break;
+          #endif
+          #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
+            case H_REDUNDANT: k = 'R'; break;
+          #endif
+        #elif HAS_HEATED_BED
+          default: k = 'B'; break;
+        #endif
+      }
+      SERIAL_CHAR(' ');
+      #if ENABLED(FABTOTUM_COMPAT_COLIBRI)
+        SERIAL_CHAR(k);
+        if (e >= 0) SERIAL_CHAR('0' + e);
+        SERIAL_ECHOPGM(": ");
+        SERIAL_ECHO(c);
+        SERIAL_ECHOPAIR("/" , t);
+      #else
+        SERIAL_CHAR(k);
+        #if HAS_MULTI_HOTEND
+          if (e >= 0) SERIAL_CHAR('0' + e);
+        #endif
+        SERIAL_CHAR(':');
+        SERIAL_ECHO(c);
+        SERIAL_ECHOPAIR(" /" , t);
+        #if ENABLED(SHOW_TEMP_ADC_VALUES)
+          SERIAL_ECHOPAIR(" (", r * RECIPROCAL(OVERSAMPLENR));
+          SERIAL_CHAR(')');
+        #endif
+      #endif // ENABLED(FABTOTUM_COMPAT_COLIBRI)
+      delay(2);
   }
 
   void Temperature::print_heater_states(const uint8_t target_extruder
@@ -3062,10 +3070,19 @@ void Temperature::tick() {
         , (heater_id_t)e
       );
     #endif
-    SERIAL_ECHOPAIR(" @:", getHeaterPower((heater_id_t)target_extruder));
-    #if HAS_HEATED_BED
-      SERIAL_ECHOPAIR(" B@:", getHeaterPower(H_BED));
-    #endif
+
+    #if ENABLED(FABTOTUM_COMPAT_COLIBRI)
+      print_heater_state(degHotend(target_extruder), degTargetHotend(target_extruder), H_E0);
+      SERIAL_ECHOPAIR(" @: ", getHeaterPower((heater_id_t)target_extruder));
+      #if HAS_HEATED_BED
+        SERIAL_ECHOPAIR(" B@: ", getHeaterPower(H_BED));
+      #endif
+    #else
+      SERIAL_ECHOPAIR(" @:", getHeaterPower((heater_id_t)target_extruder));
+      #if HAS_HEATED_BED
+        SERIAL_ECHOPAIR(" B@:", getHeaterPower(H_BED));
+      #endif
+    #endif // ENABLED(FABTOTUM_COMPAT_COLIBRI)
     #if HAS_HEATED_CHAMBER
       SERIAL_ECHOPAIR(" C@:", getHeaterPower(H_CHAMBER));
     #endif
