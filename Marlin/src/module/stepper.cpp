@@ -2680,10 +2680,15 @@ void Stepper::endstop_triggered(const AxisEnum axis) {
   const bool was_enabled = suspend();
   endstops_trigsteps[axis] = (
     #if IS_CORE
+      // (axis == CORE_AXIS_2
+      //   ? CORESIGN(count_position[CORE_AXIS_1] - count_position[CORE_AXIS_2])
+      //   : count_position[CORE_AXIS_1] + count_position[CORE_AXIS_2]
+      // ) * double(0.5)
       (axis == CORE_AXIS_2
-        ? CORESIGN(count_position[CORE_AXIS_1] - count_position[CORE_AXIS_2])
-        : count_position[CORE_AXIS_1] + count_position[CORE_AXIS_2]
-      ) * double(0.5)
+        ? CORESIGN(count_position[CORE_AXIS_1] - count_position[CORE_AXIS_2]) * double(0.5)
+        : axis == CORE_AXIS_1
+          ? count_position[CORE_AXIS_1] + count_position[CORE_AXIS_2] * double(0.5)
+          : count_position[axis])
     #elif ENABLED(MARKFORGED_XY)
       axis == CORE_AXIS_1
         ? count_position[CORE_AXIS_1] - count_position[CORE_AXIS_2]
