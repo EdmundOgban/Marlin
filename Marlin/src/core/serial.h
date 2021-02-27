@@ -276,7 +276,11 @@ extern uint8_t marlin_debug_flags;
 #define SERIAL_ECHOLNPAIR_F(V...)   do{ SERIAL_ECHOPAIR_F(V); SERIAL_EOL(); }while(0)
 
 #define SERIAL_ECHO_START()         serial_echo_start()
-#define SERIAL_ERROR_START()        serial_error_start()
+#if ENABLED(FABTOTUM_COMPAT_COLIBRI)
+  #define SERIAL_ERROR_START()      serial_async_start()
+#else
+  #define SERIAL_ERROR_START()      serial_error_start()
+#endif
 #define SERIAL_EOL()                SERIAL_CHAR('\n')
 
 #define SERIAL_ECHO_MSG(V...)       do{ SERIAL_ECHO_START(); SERIAL_ECHOLNPAIR(V); }while(0)
@@ -310,6 +314,9 @@ inline void serial_echopair_PGM(PGM_P const s_P, void *v)   { serial_echopair_PG
 void serialprintPGM(PGM_P str);
 void serial_echo_start();
 void serial_error_start();
+#if ENABLED(FABTOTUM_COMPAT_COLIBRI)
+  void serial_async_start();
+#endif
 void serial_ternary(const bool onoff, PGM_P const pre, PGM_P const on, PGM_P const off, PGM_P const post=nullptr);
 void serialprint_onoff(const bool onoff);
 void serialprintln_onoff(const bool onoff);

@@ -25,8 +25,14 @@
 
 uint8_t marlin_debug_flags = MARLIN_DEBUG_NONE;
 
-static PGMSTR(errormagic, "Error:");
-static PGMSTR(echomagic, "echo:");
+#if ENABLED(FABTOTUM_COMPAT_COLIBRI)
+  static PGMSTR(errormagic, "E: ");
+  static PGMSTR(asyncmagic, "A: ");
+  static PGMSTR(echomagic, "");
+#else
+  static PGMSTR(errormagic, "Error:");
+  static PGMSTR(echomagic, "echo:");
+#endif
 
 #if HAS_MULTI_SERIAL
   int8_t serial_port_index = 0;
@@ -37,6 +43,9 @@ void serialprintPGM(PGM_P str) {
 }
 void serial_echo_start()  { serialprintPGM(echomagic); }
 void serial_error_start() { serialprintPGM(errormagic); }
+#if ENABLED(FABTOTUM_COMPAT_COLIBRI)
+  void serial_async_start()  { serialprintPGM(asyncmagic); }
+#endif
 
 void serial_echopair_PGM(PGM_P const s_P, const char *v)   { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_PGM(PGM_P const s_P, char v)          { serialprintPGM(s_P); SERIAL_CHAR(v); }
