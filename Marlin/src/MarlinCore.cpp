@@ -221,6 +221,10 @@
   #include "feature/password/password.h"
 #endif
 
+#if ENABLED(FABTOTUM_COMPAT)
+  #include "gcode/fabtotum/fabtotum.h"
+#endif
+
 PGMSTR(NUL_STR, "");
 PGMSTR(M112_KILL_STR, "M112 Shutdown");
 PGMSTR(G28_STR, "G28");
@@ -786,7 +790,6 @@ void kill(PGM_P const lcd_error/*=nullptr*/, PGM_P const lcd_component/*=nullptr
   thermalManager.disable_all_heaters();
 
   TERN_(HAS_CUTTER, cutter.kill()); // Full cutter shutdown including ISR control
-
   SERIAL_ERROR_MSG(STR_ERR_KILLED);
 
   #if HAS_DISPLAY
@@ -1051,6 +1054,11 @@ void setup() {
   // Init buzzer pin(s)
   #if USE_BEEPER
     SETUP_RUN(buzzer.init());
+  #endif
+
+  #if ENABLED(FABTOTUM_COMPAT)
+    #include "gcode/fabtotum/fabtotum.h"
+    FABtotum::M300();
   #endif
 
   // Set up LEDs early
