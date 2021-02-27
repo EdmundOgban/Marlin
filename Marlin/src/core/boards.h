@@ -49,6 +49,7 @@
 #define BOARD_RAMPS_PLUS_EEF          1033  // RAMPS Plus 3DYMY (Power outputs: Hotend0, Hotend1, Fan)
 #define BOARD_RAMPS_PLUS_SF           1034  // RAMPS Plus 3DYMY (Power outputs: Spindle, Controller Fan)
 
+
 //
 // RAMPS Derivatives - ATmega1280, ATmega2560
 //
@@ -109,6 +110,8 @@
 #define BOARD_COPYMASTER_3D           1153  // Copymaster 3D
 #define BOARD_ORTUR_4                 1154  // Ortur 4
 #define BOARD_TENLOG_D3_HERO          1155  // Tenlog D3 Hero IDEX printer
+
+#define BOARD_TOTUMDUINO              1170
 
 //
 // RAMBo and derivatives
