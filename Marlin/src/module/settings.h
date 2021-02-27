@@ -83,6 +83,10 @@ class MarlinSettings {
       static void first_load() { (void)load(); }
     #endif
 
+    #if ENABLED(FABTOTUM_COMPAT)
+      static void report_legacy(const bool forReplay=false);
+    #endif
+
     #if DISABLED(DISABLE_M503)
       static void report(const bool forReplay=false);
     #else

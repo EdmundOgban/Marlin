@@ -2911,6 +2911,130 @@ void MarlinSettings::reset() {
 
   void report_M92(const bool echo=true, const int8_t e=-1);
 
+  #if ENABLED(FABTOTUM_COMPAT)
+    void MarlinSettings::report_legacy(const bool forReplay) {
+      SERIAL_ECHOLNPGM("FABtotum TOTUMDUINO");
+      // TODO: Batch number shouldn't be fixed
+      SERIAL_ECHOLNPGM("  Batch Number: 5");
+      CONFIG_ECHO_HEADING("FABlin");
+      SERIAL_ECHOLNPAIR("  Version: ", SHORT_BUILD_VERSION);
+      SERIAL_ECHOLNPAIR("  Baudrate: ", BAUDRATE);
+
+      CONFIG_ECHO_HEADING("Steps per unit:");
+      report_M92(!forReplay);
+
+      CONFIG_ECHO_HEADING("Maximum feedrates (units/s):");
+      SERIAL_ECHOLNPAIR_P(
+          PSTR("  M203 X"), LINEAR_UNIT(planner.settings.max_feedrate_mm_s[X_AXIS])
+        , SP_Y_STR, LINEAR_UNIT(planner.settings.max_feedrate_mm_s[Y_AXIS])
+        , SP_Z_STR, LINEAR_UNIT(planner.settings.max_feedrate_mm_s[Z_AXIS])
+        #if DISABLED(DISTINCT_E_FACTORS)
+          , SP_E_STR, VOLUMETRIC_UNIT(planner.settings.max_feedrate_mm_s[E_AXIS])
+        #endif
+      );
+
+      CONFIG_ECHO_HEADING("Maximum Acceleration (units/s2):");
+      SERIAL_ECHOLNPAIR_P(
+          PSTR("  M201 X"), LINEAR_UNIT(planner.settings.max_acceleration_mm_per_s2[X_AXIS])
+        , SP_Y_STR, LINEAR_UNIT(planner.settings.max_acceleration_mm_per_s2[Y_AXIS])
+        , SP_Z_STR, LINEAR_UNIT(planner.settings.max_acceleration_mm_per_s2[Z_AXIS])
+        #if DISABLED(DISTINCT_E_FACTORS)
+          , SP_E_STR, VOLUMETRIC_UNIT(planner.settings.max_acceleration_mm_per_s2[E_AXIS])
+        #endif
+      );
+
+      CONFIG_ECHO_HEADING("Acceleration (units/s2): S<accel> T<retract_accel>");
+      SERIAL_ECHOLNPAIR_P(
+          PSTR("  M204 S"), LINEAR_UNIT(planner.settings.acceleration)
+        , SP_T_STR, LINEAR_UNIT(planner.settings.retract_acceleration)
+      );
+
+      CONFIG_ECHO_HEADING(
+        "Advanced: B<min_segment_time_us> S<min_feedrate> T<min_travel_feedrate>"
+        #if HAS_JUNCTION_DEVIATION
+          " J<junc_dev>"
+        #endif
+        #if HAS_CLASSIC_JERK
+          " X<max_x_jerk> Z<max_z_jerk>"
+          TERN_(HAS_CLASSIC_E_JERK, " E<max_e_jerk>")
+        #endif
+      );
+      SERIAL_ECHOLNPAIR_P(
+          PSTR("  M205 S"), LINEAR_UNIT(planner.settings.min_feedrate_mm_s)
+        , SP_T_STR, LINEAR_UNIT(planner.settings.min_travel_feedrate_mm_s)
+        , PSTR(" B"), LINEAR_UNIT(planner.settings.min_segment_time_us)
+
+        #if HAS_JUNCTION_DEVIATION
+          , PSTR(" J"), LINEAR_UNIT(planner.junction_deviation_mm)
+        #endif
+        #if HAS_CLASSIC_JERK
+          , SP_X_STR, LINEAR_UNIT(planner.max_jerk.x)
+          , SP_Z_STR, LINEAR_UNIT(planner.max_jerk.z)
+          #if HAS_CLASSIC_E_JERK
+            , SP_E_STR, LINEAR_UNIT(planner.max_jerk.e)
+          #endif
+        #endif
+      );
+
+      CONFIG_ECHO_HEADING("Home offset:");
+      CONFIG_ECHO_START();
+      SERIAL_ECHOLNPAIR_P(
+        #if IS_CARTESIAN
+            PSTR("  M206 X"), 0.0
+          , SP_Y_STR, 0.0
+          , SP_Z_STR
+        #else
+          PSTR("  M206 Z")
+        #endif
+        , 0.0
+      );
+
+      #if HAS_PID_HEATING
+        CONFIG_ECHO_HEADING("PID settings:");
+
+        #if ENABLED(PIDTEMP)
+          HOTEND_LOOP() {
+            CONFIG_ECHO_START();
+            SERIAL_ECHOPAIR_P(
+              #if ENABLED(PID_PARAMS_PER_HOTEND)
+                PSTR("  M301 E"), e,
+                SP_P_STR
+              #else
+                PSTR("  M301 P")
+              #endif
+                          , PID_PARAM(Kp, e)
+              , PSTR(" I"), unscalePID_i(PID_PARAM(Ki, e))
+              , PSTR(" D"), unscalePID_d(PID_PARAM(Kd, e))
+            );
+            #if ENABLED(PID_EXTRUSION_SCALING)
+              SERIAL_ECHOPAIR_P(SP_C_STR, PID_PARAM(Kc, e));
+              if (e == 0) SERIAL_ECHOPAIR(" L", thermalManager.lpq_len);
+            #endif
+            #if ENABLED(PID_FAN_SCALING)
+              SERIAL_ECHOPAIR(" F", PID_PARAM(Kf, e));
+            #endif
+            SERIAL_EOL();
+          }
+        #endif // PIDTEMP
+
+        #if ENABLED(PIDTEMPBED)
+          CONFIG_ECHO_START();
+          SERIAL_ECHOLNPAIR(
+              "  M304 P", thermalManager.temp_bed.pid.Kp
+            , " I", unscalePID_i(thermalManager.temp_bed.pid.Ki)
+            , " D", unscalePID_d(thermalManager.temp_bed.pid.Kd)
+          );
+        #endif
+      #endif // PIDTEMP || PIDTEMPBED
+
+      // FIXME
+      SERIAL_ECHOLNPGM("Servo Endstop settings: R: 40 E: 139");
+      SERIAL_ECHOLNPGM("Z Probe Length: -31.65");
+      CONFIG_ECHO_HEADING("Installed head ID:");
+      SERIAL_ECHOLNPGM("  M793 S2");
+    }
+  #endif // ENABLED(FABTOTUM_COMPAT)
+
   /**
    * M503 - Report current settings in RAM
    *

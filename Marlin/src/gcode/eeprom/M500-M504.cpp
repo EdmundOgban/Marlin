@@ -52,7 +52,11 @@ void GcodeSuite::M502() {
    * M503: print settings currently in memory
    */
   void GcodeSuite::M503() {
-    (void)settings.report(!parser.boolval('S', true));
+    #if ENABLED(FABTOTUM_COMPAT)
+      (void)settings.report_legacy(!parser.boolval('S', true));
+    #else
+      (void)settings.report(!parser.boolval('S', true));
+    #endif
   }
 
 #endif // !DISABLE_M503
