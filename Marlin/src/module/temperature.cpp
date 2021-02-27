@@ -2462,6 +2462,9 @@ HAL_TEMP_TIMER_ISR() {
   HAL_timer_isr_prologue(TEMP_TIMER_NUM);
 
   Temperature::tick();
+  #if ENABLED(FABTOTUM_COMPAT)
+    amblight.tick();
+  #endif
 
   HAL_timer_isr_epilogue(TEMP_TIMER_NUM);
 }
