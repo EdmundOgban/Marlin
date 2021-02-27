@@ -205,6 +205,8 @@
   #include "ramps/pins_TENLOG_D3_HERO.h"        // ATmega2560                             env:mega2560
 #elif MB(MKS_GEN_L_V21)
   #include "ramps/pins_MKS_GEN_L_V21.h"         // ATmega2560                             env:mega2560
+#elif MB(TOTUMDUINO)
+  #include "fabtotum/pins_TOTUMDUINO.h"         // ATmega1280                             env:mega1280
 
 //
 // RAMBo and derivatives
