@@ -193,7 +193,16 @@
  *  Y   Home to the Y endstop
  *  Z   Home to the Z endstop
  */
+
+#if ENABLED(FABTOTUM_COMPAT)
+  #include "../fabtotum/amblight.h"
+  extern AmbientLight amblight;
+#endif
+
 void GcodeSuite::G28() {
+  amblight.push();
+  amblight.set_color(0, 255, 0);
+
   DEBUG_SECTION(log_G28, "G28", DEBUGGING(LEVELING));
   if (DEBUGGING(LEVELING)) log_machine_info();
 
@@ -219,6 +228,7 @@ void GcodeSuite::G28() {
   // Home (O)nly if position is unknown
   if (!homing_needed() && parser.boolval('O')) {
     if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("> homing not needed, skip");
+    amblight.pop();
     return;
   }
 
@@ -382,6 +392,20 @@ void GcodeSuite::G28() {
 
     sync_plan_position();
 
+
+    #if ENABLED(FABTOTUM_COMPAT)
+      // If G28 contains Z and a value, set Machine Z to the provided value
+      if (parser.seenval('Z')) {
+        float x = planner.get_axis_position_mm(_AXIS(X)),
+              y = planner.get_axis_position_mm(_AXIS(Y)),
+              e = planner.get_axis_position_mm(_AXIS(E));
+        float z = parser.value_float();
+
+        planner.set_machine_position_mm(x, y, z, e);
+        current_position[_AXIS(Z)] = z;
+      }
+    #endif
+
   #endif // !DELTA (G28)
 
   /**
@@ -478,4 +502,6 @@ void GcodeSuite::G28() {
       L64xxManager.set_param((L64XX_axis_t)cv, L6470_ABS_POS, stepper.position(L64XX_axis_xref[cv]));
     }
   #endif
+
+  amblight.pop();
 }
